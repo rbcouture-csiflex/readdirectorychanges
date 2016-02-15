@@ -32,7 +32,8 @@
 
 
 LPCWSTR ExplainAction( DWORD dwAction );
-bool TryGetKeyboardInput( HANDLE hStdIn, bool &bTerminate, char* buf );
+//bool TryGetKeyboardInput( HANDLE hStdIn, bool &bTerminate, char* buf );
+
 
 
 //
@@ -52,16 +53,18 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 
 	// Create the monitor and add two directories.
 	CReadDirectoryChanges changes;
-	changes.AddDirectory(_tgetenv(_T("USERPROFILE")), true, dwNotificationFlags);
+	//changes.AddDirectory(_tgetenv(_T("USERPROFILE")), true, dwNotificationFlags);
+	//changes.AddDirectory(_T("C:\\"), false, dwNotificationFlags);
 	changes.AddDirectory(_T("C:\\"), false, dwNotificationFlags);
 
 	HANDLE hStdIn =  ::GetStdHandle(STD_INPUT_HANDLE);
 	const HANDLE handles[] = { hStdIn, changes.GetWaitHandle() };
+	//const HANDLE handles[] = { changes.GetWaitHandle() };
 
-	char buf[MAX_PATH];
-	bool bTerminate = false;
+	//char buf[MAX_PATH];
+	//bool bTerminate = false;
 
-	while (!bTerminate)
+	while (true)
 	{
 		DWORD rc = ::WaitForMultipleObjectsEx(_countof(handles), handles, false, INFINITE, true);
 		switch (rc)
@@ -70,8 +73,9 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			// hStdIn was signaled. This can happen due to mouse input, focus change,
 			// Shift keys, and more.  Delegate to TryGetKeyboardInput().
 			// TryGetKeyboardInput sets bTerminate to true if the user hits Esc.
-			if (TryGetKeyboardInput(hStdIn, bTerminate, buf))
-				changes.AddDirectory(CStringW(buf), false, dwNotificationFlags);
+			//if (TryGetKeyboardInput(hStdIn, bTerminate, buf))
+			//	changes.AddDirectory(CStringW(buf), false, dwNotificationFlags);			
+			::FlushConsoleInputBuffer(hStdIn);
 			break;
 		case WAIT_OBJECT_0 + 1:
 			// We've received a notification in the queue.
@@ -88,6 +92,9 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			}
 			break;
 		case WAIT_IO_COMPLETION:
+			// Nothing to do.
+			break;
+		default:
 			// Nothing to do.
 			break;
 		}
@@ -119,28 +126,31 @@ LPCWSTR ExplainAction( DWORD dwAction )
 	}
 }
 
-bool TryGetKeyboardInput( HANDLE hStdIn, bool &bTerminate, char* buf )
-{
-	DWORD dwNumberOfEventsRead=0;
-	INPUT_RECORD rec = {0};
 
-	if (!::PeekConsoleInput(hStdIn, &rec, 1, &dwNumberOfEventsRead))
-		return false;
-
-	if (rec.EventType == KEY_EVENT)
-	{
-		if (rec.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE)
-			bTerminate = true;
-		else if (rec.Event.KeyEvent.wVirtualKeyCode > VK_HELP)
-		{
-			if (!gets(buf))	// End of file, usually Ctrl-Z
-				bTerminate = true;
-			else
-				return true;
-		}
-	}
-
-	::FlushConsoleInputBuffer(hStdIn);
-
-	return false;
-}
+//bool TryGetKeyboardInput( HANDLE hStdIn, bool &bTerminate, char* buf )
+//{
+//	DWORD dwNumberOfEventsRead=0;
+//	INPUT_RECORD rec = {0};
+//
+//	if (!::PeekConsoleInput(hStdIn, &rec, 1, &dwNumberOfEventsRead))
+//		return false;
+//
+//	if (rec.EventType == KEY_EVENT)
+//	{
+//		if (rec.Event.KeyEvent.wVirtualKeyCode == VK_ESCAPE)
+//			bTerminate = true;
+//		else if (rec.Event.KeyEvent.wVirtualKeyCode > VK_HELP)
+//		{
+//			
+//			//if (!gets(buf))	// End of file, usually Ctrl-Z
+//			if(!std::getchar())
+//				bTerminate = true;
+//			else
+//				return true;
+//		}
+//	}
+//
+//	::FlushConsoleInputBuffer(hStdIn);
+//
+//	return false;
+//}
